@@ -1,9 +1,15 @@
 from flask import Flask
 from database import initialize_database
 
+from routes.auth_routes import auth
+from routes.main_routes import main
+
 app=Flask(__name__)
 
 app.config["SECRET_KEY"]="random_secret_key"
+
+app.register_blueprint(auth)
+app.register_blueprint(main)
 
 initialize_database()
 
