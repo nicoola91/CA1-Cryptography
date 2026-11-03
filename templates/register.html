@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+
+        <meta charset = "UTF-8">
+        <meta name = "viewport" content = "width = device-width, initial-scale = 1.0"
+        
+        <title>Create Accout | Secure Vault</title>
+        <link rel = "stylesheel" href="{{url_for('static', filename = 'css/style.css') }}">
+
+    </head>
+
+    <body class = "auth-page">
+
+        <main class = "auth-card">
+            <div class = "brand">
+                <div class = "brand-icon">S</div>
+                <span>SecureVault</span>
+            </div>
+
+            <h1>Create your account!</h1>
+            <p class = "subtitle">Securely store & manage your files.</p>
+
+            {% with messages = get_flashed_messages() %}
+                {% for message in messages%}
+                    <div class = "alert"> {{message}} </div>
+                {% endfor %}
+            {% endwith %}
+
+            <!--Registration from-->
+            <form method = "POST" action = "{{url_for('auth.register') }}">
+                <!--Label for username entry-->
+                <label for = "username">Username</label>
+                <input type = "text" id = "username" name = "username" placeholder = "Choose a username..." required>
+                <!--Label for password entry-->
+                <label for = "password">Password</label>
+                <input type = "password" id = "password" name = "password" placeholder = "Enter at least 8 characters" minlength="8" required>
+                <!--Button to submit details & create new account-->
+                <button type = "submit" class = "btn-primary">Create Account</button>
+            </form>
+
+            <!--Footer-->
+            <p class = "auth-footer">
+                Already have an account?
+                <a href = "{{url_for('auth.login')}}">Sign in</a>
+            </p>
+
+        </main>
+
+    </body>
+</html>

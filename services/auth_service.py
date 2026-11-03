@@ -31,7 +31,7 @@ def authenticate_user(username, password):
     connection = get_db_connection()
     try:
         user = connection.execute(
-            "SELECT*FROM users WHERE email = ?"
+            "SELECT * FROM users WHERE email = ?",
             (email,)
         ).fetchone()
 
