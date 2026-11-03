@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang = "en">
+
+    <head>
+        <meta charset = "UTF-8">
+        <meta name = "viewport" content = "width = device-width, initial-scale = 1.0">
+        
+        <title>Dashboard | SecureVault</title>
+        <link rel = "stylesheet" href = "{{url_for('static', filename = 'css/style.css') }}">
+    </head>
+
+    <body class = "topbar">
+
+        <header class = "topbar">
+            <div class = "dashboard-page">
+                <div class = "brand-icon">S</div>
+                <span>SecureVault</span>
+            </div>
+
+            <form method = "POST" action = "{{url_for('auth.logout') }}">
+                <button type = "submit" class = "btn-logout">Log Out</button>
+            </form>
+        </header>
+
+        <main class = "dashboard-container">
+            
+            <section class = "welcome-section">
+                <h1>Welcome, {{username}}!</h1>
+                <p>Manage your files securely from one place.</p>
+            </section>
+
+            <section class = "security-card">
+                <div>
+                    <h3>Your account is protected</h3>
+                    <p>You are successfully logged in to SecureVault.</p>
+                </div>
+            </section>
+
+            <section class = "files-section">
+                <div class = "section-heading">
+                    <div>
+                        <h2>My Files</h2>
+                        <p>Your personal secure file storage.</p>
+                    </div>
+                </div>
+
+                <div class = "empty-state">
+                    <div class = "file-icon">📁</div>
+                    <h3>Your files will appear here</h3>
+                    <p>File uploading & downloading will be integrated once the storage funtionality is integrated.</p>
+                </div>
+            </section>
+
+        </main>
+
+    </body>
+
+</html>

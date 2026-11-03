@@ -1,5 +1,5 @@
 from flask import Flask
-from database import initialize_database
+from database import initialise_database
 
 from routes.auth_routes import auth
 from routes.main_routes import main
@@ -11,7 +11,7 @@ app.config["SECRET_KEY"]="random_secret_key"
 app.register_blueprint(auth)
 app.register_blueprint(main)
 
-initialize_database()
+initialise_database()
 
 if __name__=="__main__":
     app.run(debug=True)
