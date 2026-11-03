@@ -3,10 +3,10 @@
     <head>
 
         <meta charset = "UTF-8">
-        <meta name = "viewport" content = "width = device-width, initial-scale = 1.0"
+        <meta name = "viewport" content = "width = device-width, initial-scale = 1.0">
         
         <title>Create Accout | Secure Vault</title>
-        <link rel = "stylesheel" href="{{url_for('static', filename = 'css/style.css') }}">
+        <link rel = "stylesheet" href="{{url_for('static', filename = 'css/style.css') }}">
 
     </head>
 
@@ -32,6 +32,9 @@
                 <!--Label for username entry-->
                 <label for = "username">Username</label>
                 <input type = "text" id = "username" name = "username" placeholder = "Choose a username..." required>
+                <!--Label for email entry-->
+                <label for = "email">Email address</label>
+                <input type = "email" id = "email" name = "email" placeholder = "Enter your email..." required>
                 <!--Label for password entry-->
                 <label for = "password">Password</label>
                 <input type = "password" id = "password" name = "password" placeholder = "Enter at least 8 characters" minlength="8" required>

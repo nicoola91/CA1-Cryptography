@@ -6,7 +6,7 @@
         <meta name = "viewport" content = "width = device-width, initial-scale = 1.0">
         
         <title>Dashboard | SecureVault</title>
-        <link rel = "stylesheet" href = "{{url_for('static', filename'css/style.css') }}">
+        <link rel = "stylesheet" href = "{{url_for('static', filename = 'css/style.css') }}">
     </head>
 
     <body class = "topbar">
@@ -17,7 +17,7 @@
                 <span>SecureVault</span>
             </div>
 
-            <form method = "POST" action = "{{url_for(auth.logout) }}">
+            <form method = "POST" action = "{{url_for('auth.logout') }}">
                 <button type = "submit" class = "btn-logout">Log Out</button>
             </form>
         </header>

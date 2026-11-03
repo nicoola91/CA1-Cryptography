@@ -25,7 +25,7 @@ def register_user(username, email, password):
     finally:
         connection.close()
 
-def authenticate_user(username, password):
+def authenticate_user(email, password):
     email = email.strip().lower()
 
     connection = get_db_connection()
