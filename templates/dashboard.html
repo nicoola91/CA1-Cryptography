@@ -1,67 +1,445 @@
 <!DOCTYPE html>
-<html lang = "en">
+<html lang="en">
 
-    <head>
-        <meta charset = "UTF-8">
-        <meta name = "viewport" content = "width = device-width, initial-scale = 1.0">
-        
-        <title>Dashboard | SecureVault</title>
-        <link rel = "stylesheet" href = "{{url_for('static', filename = 'css/style.css') }}">
-    </head>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <body class = "topbar">
+    <title>Dashboard | SecureVault</title>
 
-        <header class = "topbar">
-            <div class = "dashboard-page">
-                <div class = "brand-icon">S</div>
-                <span>SecureVault</span>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+
+<body class="topbar">
+
+    <header class="topbar">
+
+        <div class="dashboard-page">
+            <div class="brand-icon">S</div>
+            <span>SecureVault</span>
+        </div>
+
+        <form id="logoutForm" method="POST" action="{{ url_for('auth.logout') }}">
+            <button type="submit" class="btn-logout">Log Out</button>
+        </form>
+
+    </header>
+
+    <main class="dashboard-container">
+
+        <!-- Welcome Section -->
+        <section class="welcome-section">
+            <h1>Welcome, {{ username }}!</h1>
+            <p>Manage your files securely from one place.</p>
+        </section>
+
+        <!-- Security Status -->
+        <section class="security-card">
+            <div>
+                <h3>Your account is protected</h3>
+                <p id="keyStatus">Checking your encryption key...</p>
+            </div>
+        </section>
+
+        <!-- File Upload Section -->
+        <section class="files-section">
+
+            <div class="section-heading">
+                <div>
+                    <h2>Save a File</h2>
+                    <p>Upload and securely store your files.</p>
+                </div>
             </div>
 
-            <form method = "POST" action = "{{url_for('auth.logout') }}">
-                <button type = "submit" class = "btn-logout">Log Out</button>
-            </form>
-        </header>
+            <div class="upload-card">
 
-        <main class = "dashboard-container">
-            
-            <section class = "welcome-section">
-                <h1>Welcome, {{username}}!</h1>
-                <p>Manage your files securely from one place.</p>
-            </section>
+                <form id="uploadForm">
 
-            <section class = "security-card">
+                    <label for="fileInput">Choose a file</label>
+
+                    <input
+                        type="file"
+                        id="fileInput"
+                        required
+                        disabled
+                    >
+
+                    <button
+                        type="submit"
+                        class="btn-logout"
+                        id="saveButton"
+                        disabled
+                    >
+                        Save
+                    </button>
+
+                </form>
+
+                <p id="uploadStatus" role="status"></p>
+
+            </div>
+
+        </section>
+
+        <!-- Stored Files Section -->
+        <section class="files-section">
+
+            <div class="section-heading">
                 <div>
-                    <h3>Your account is protected</h3>
-                    <p>You are successfully logged in to SecureVault.</p>
+                    <h2>My Files</h2>
+                    <p>Your personal secure file storage.</p>
                 </div>
-            </section>
+            </div>
 
-            <section class = "files-section">
-                <div class = "section-heading">
-                    <div>
-                        <h2>My Files</h2>
-                        <p>Your personal secure file storage.</p>
+            {% if files %}
+
+                {% for file in files %}
+
+                    <div class="file-item">
+
+                        <div class="file-icon">📄</div>
+
+                        <h3>{{ file["filename"] }}</h3>
+
+                        <button
+                            type="button"
+                            class="btn-logout download-button"
+                            data-file-id="{{ file['id'] }}"
+                            data-filename="{{ file['filename'] }}"
+                        >
+                            Download
+                        </button>
+
+                        <p
+                            id="downloadStatus{{ file['id'] }}"
+                            role="status"
+                        ></p>
+
                     </div>
+
+                {% endfor %}
+
+            {% else %}
+
+                <div class="empty-state">
+
+                    <div class="file-icon">📁</div>
+
+                    <h3>Your files will appear here</h3>
+
+                    <p>Your encrypted files will appear here after uploading.</p>
+
                 </div>
 
-                {% if files %}
-    {% for file in files %}
-        <div class="file-item">
-            <div class="file-icon">📄</div>
-            <h3>{{ file["filename"] }}</h3>
-        </div>
-    {% endfor %}
-{% else %}
-    <div class="empty-state">
-        <div class="file-icon">📁</div>
-        <h3>Your files will appear here</h3>
-        <p>File uploading & downloading will be integrated once the storage functionality is integrated.</p>
-    </div>
-{% endif %}
-            </section>
+            {% endif %}
 
-        </main>
+        </section>
 
-    </body>
+    </main>
+
+    <script src="{{ url_for('static', filename='js/encryption.js') }}"></script>
+
+    <script>
+
+        // Open the IndexedDB database
+        function openKeyDatabase() {
+
+            return new Promise((resolve, reject) => {
+
+                const request = indexedDB.open("SecureVaultDB", 1);
+
+                request.onupgradeneeded = function(event) {
+
+                    const database = event.target.result;
+
+                    if (!database.objectStoreNames.contains("keys")) {
+                        database.createObjectStore("keys");
+                    }
+
+                };
+
+                request.onsuccess = function(event) {
+                    resolve(event.target.result);
+                };
+
+                request.onerror = function() {
+                    reject(request.error);
+                };
+
+            });
+
+        }
+
+
+        // Retrieve the master key from IndexedDB
+        async function getMasterKey() {
+
+            const database = await openKeyDatabase();
+
+            return new Promise((resolve, reject) => {
+
+                const transaction = database.transaction(
+                    ["keys"],
+                    "readonly"
+                );
+
+                const request = transaction
+                    .objectStore("keys")
+                    .get("masterKey");
+
+                request.onsuccess = function() {
+                    database.close();
+                    resolve(request.result);
+                };
+
+                request.onerror = function() {
+                    database.close();
+                    reject(request.error);
+                };
+
+            });
+
+        }
+
+
+        // Delete the saved master key
+        async function deleteMasterKey() {
+
+            const database = await openKeyDatabase();
+
+            return new Promise((resolve, reject) => {
+
+                const transaction = database.transaction(
+                    ["keys"],
+                    "readwrite"
+                );
+
+                transaction.objectStore("keys").delete("masterKey");
+
+                transaction.oncomplete = function() {
+                    database.close();
+                    resolve();
+                };
+
+                transaction.onerror = function() {
+                    database.close();
+                    reject(transaction.error);
+                };
+
+            });
+
+        }
+
+
+        // Load the encryption key when the dashboard opens
+        async function initialiseDashboard() {
+
+            const keyStatus = document.getElementById("keyStatus");
+            const fileInput = document.getElementById("fileInput");
+            const saveButton = document.getElementById("saveButton");
+
+            try {
+
+                const masterKey = await getMasterKey();
+
+                if (!masterKey) {
+
+                    keyStatus.textContent =
+                        "Encryption key not found. Please log in again.";
+
+                    return;
+                }
+
+                window.secureVaultEncryptionKey = masterKey;
+
+                keyStatus.textContent =
+                    "Your encryption key is ready.";
+
+                fileInput.disabled = false;
+                saveButton.disabled = false;
+
+            } catch (error) {
+
+                console.error("Key loading error:", error);
+
+                keyStatus.textContent =
+                    "Unable to load your encryption key.";
+
+            }
+
+        }
+
+
+        // Handle file uploads
+        const uploadForm = document.getElementById("uploadForm");
+
+        uploadForm.addEventListener("submit", async function(event) {
+
+            event.preventDefault();
+
+            const file = document.getElementById("fileInput").files[0];
+            const status = document.getElementById("uploadStatus");
+            const saveButton = document.getElementById("saveButton");
+
+            if (!file) {
+                status.textContent = "Please choose a file.";
+                return;
+            }
+
+            try {
+
+                saveButton.disabled = true;
+
+                status.textContent =
+                    "Encrypting and uploading file...";
+
+                if (!window.secureVaultEncryptionKey) {
+                    throw new Error("Encryption key is not available. Please log in again.");
+                }
+
+                await uploadEncryptedFile(
+                    file,
+                    window.secureVaultEncryptionKey
+                );
+
+                status.textContent = "File saved successfully!";
+
+                window.location.reload();
+
+            } catch (error) {
+
+                console.error("Upload error:", error);
+
+                status.textContent =
+                    error.message || "Unable to save file.";
+
+                saveButton.disabled = false;
+
+            }
+
+        });
+
+
+        // Download and decrypt a stored file
+        async function downloadFile(fileId, fileName) {
+
+            const status = document.getElementById(
+                "downloadStatus" + fileId
+            );
+
+            try {
+
+                status.textContent = "Downloading encrypted file...";
+
+                if (!window.secureVaultEncryptionKey) {
+                    throw new Error("Encryption key is not available. Please log in again.");
+                }
+
+                // Request the encrypted file from Flask
+                const response = await fetch(
+                    "/download/" + encodeURIComponent(fileId),
+                    {
+                        method: "GET",
+                        credentials: "same-origin"
+                    }
+                );
+
+                if (!response.ok) {
+
+                    const result = await response.json();
+
+                    throw new Error(
+                        result.error || "Download failed."
+                    );
+
+                }
+
+                // Retrieve the nonce from the response
+                const nonce = response.headers.get("X-File-Nonce");
+
+                if (!nonce) {
+                    throw new Error("Encryption information is missing.");
+                }
+
+                // Convert the nonce from Base64
+                const iv = fromBase64(nonce);
+
+                // Retrieve the encrypted file
+                const encryptedData = await response.arrayBuffer();
+
+                status.textContent = "Decrypting file...";
+
+                // Decrypt and download the original file
+                await decryptFile(
+                    encryptedData,
+                    window.secureVaultEncryptionKey,
+                    iv,
+                    fileName,
+                    "application/octet-stream"
+                );
+
+                status.textContent = "File downloaded successfully!";
+
+            } catch (error) {
+
+                console.error("Download error:", error);
+
+                status.textContent =
+                    error.message || "Unable to download file.";
+
+            }
+
+        }
+
+
+        // Connect each Download button to its file
+        document.querySelectorAll(".download-button").forEach(button => {
+
+            button.addEventListener("click", async function() {
+
+                const fileId = this.dataset.fileId;
+                const fileName = this.dataset.filename;
+
+                this.disabled = true;
+
+                await downloadFile(fileId, fileName);
+
+                this.disabled = false;
+
+            });
+
+        });
+
+
+        // Clear the saved key when logging out
+        const logoutForm = document.getElementById("logoutForm");
+
+        logoutForm.addEventListener("submit", async function(event) {
+
+            event.preventDefault();
+
+            try {
+
+                await deleteMasterKey();
+
+            } catch (error) {
+
+                console.error("Unable to clear encryption key:", error);
+
+            }
+
+            window.secureVaultEncryptionKey = null;
+
+            logoutForm.submit();
+
+        });
+
+
+        // Start the dashboard
+        initialiseDashboard();
+
+    </script>
+
+</body>
 
 </html>

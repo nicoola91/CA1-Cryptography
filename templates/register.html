@@ -1,54 +1,142 @@
 <!DOCTYPE html>
 <html lang="en">
-    <head>
 
-        <meta charset = "UTF-8">
-        <meta name = "viewport" content = "width = device-width, initial-scale = 1.0">
-        
-        <title>Create Accout | Secure Vault</title>
-        <link rel = "stylesheet" href="{{url_for('static', filename = 'css/style.css') }}">
+<head>
 
-    </head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <body class = "auth-page">
+    <title>Create Account | SecureVault</title>
 
-        <main class = "auth-card">
-            <div class = "brand">
-                <div class = "brand-icon">S</div>
-                <span>SecureVault</span>
-            </div>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 
-            <h1>Create your account!</h1>
-            <p class = "subtitle">Securely store & manage your files.</p>
+</head>
 
-            {% with messages = get_flashed_messages() %}
-                {% for message in messages%}
-                    <div class = "alert"> {{message}} </div>
-                {% endfor %}
-            {% endwith %}
+<body class="auth-page">
 
-            <!--Registration from-->
-            <form method = "POST" action = "{{url_for('auth.register') }}">
-                <!--Label for username entry-->
-                <label for = "username">Username</label>
-                <input type = "text" id = "username" name = "username" placeholder = "Choose a username..." required>
-                <!--Label for email entry-->
-                <label for = "email">Email address</label>
-                <input type = "email" id = "email" name = "email" placeholder = "Enter your email..." required>
-                <!--Label for password entry-->
-                <label for = "password">Password</label>
-                <input type = "password" id = "password" name = "password" placeholder = "Enter at least 8 characters" minlength="8" required>
-                <!--Button to submit details & create new account-->
-                <button type = "submit" class = "btn-primary">Create Account</button>
-            </form>
+    <main class="auth-card">
 
-            <!--Footer-->
-            <p class = "auth-footer">
-                Already have an account?
-                <a href = "{{url_for('auth.login')}}">Sign in</a>
-            </p>
+        <div class="brand">
+            <div class="brand-icon">S</div>
+            <span>SecureVault</span>
+        </div>
 
-        </main>
+        <h1>Create your account!</h1>
+        <p class="subtitle">Securely store and manage your files.</p>
 
-    </body>
+        {% with messages = get_flashed_messages() %}
+            {% for message in messages %}
+                <div class="alert">{{ message }}</div>
+            {% endfor %}
+        {% endwith %}
+
+        <form id="registerForm" method="POST" action="{{ url_for('auth.register') }}">
+
+            <label for="username">Username</label>
+
+            <input
+                type="text"
+                id="username"
+                name="username"
+                placeholder="Choose a username..."
+                autocomplete="username"
+                required
+            >
+
+            <label for="email">Email address</label>
+
+            <input
+                type="email"
+                id="email"
+                name="email"
+                placeholder="Enter your email..."
+                autocomplete="email"
+                required
+            >
+
+            <label for="password">Password</label>
+
+            <input
+                type="password"
+                id="password"
+                name="password"
+                placeholder="Enter at least 8 characters"
+                minlength="8"
+                autocomplete="new-password"
+                required
+            >
+
+            <button type="submit" class="btn-primary" id="registerButton">
+                Create Account
+            </button>
+
+        </form>
+
+        <p class="auth-footer">
+            Already have an account?
+            <a href="{{ url_for('auth.login') }}">Sign in</a>
+        </p>
+
+    </main>
+
+    <script src="{{ url_for('static', filename='js/encryption.js') }}"></script>
+
+    <script>
+
+        const registerForm = document.getElementById("registerForm");
+
+        registerForm.addEventListener("submit", async function(event) {
+
+            event.preventDefault();
+
+            const password = document.getElementById("password").value;
+            const registerButton = document.getElementById("registerButton");
+
+            try {
+
+                registerButton.disabled = true;
+                registerButton.textContent = "Creating account...";
+
+                // Generate and protect the master encryption key
+                const protectedKey = await createProtectedMasterKey(password);
+
+                // Add the protected key information to the form
+                const encryptedKeyInput = document.createElement("input");
+                encryptedKeyInput.type = "hidden";
+                encryptedKeyInput.name = "encrypted_master_key";
+                encryptedKeyInput.value = protectedKey.encryptedMasterKey;
+
+                const saltInput = document.createElement("input");
+                saltInput.type = "hidden";
+                saltInput.name = "key_salt";
+                saltInput.value = protectedKey.keySalt;
+
+                const nonceInput = document.createElement("input");
+                nonceInput.type = "hidden";
+                nonceInput.name = "key_nonce";
+                nonceInput.value = protectedKey.keyNonce;
+
+                registerForm.appendChild(encryptedKeyInput);
+                registerForm.appendChild(saltInput);
+                registerForm.appendChild(nonceInput);
+
+                // Submit the registration form to Flask
+                registerForm.submit();
+
+            } catch (error) {
+
+                console.error("Registration error:", error);
+
+                alert("Unable to create your encryption key. Please try again.");
+
+                registerButton.disabled = false;
+                registerButton.textContent = "Create Account";
+
+            }
+
+        });
+
+    </script>
+
+</body>
 </html>
