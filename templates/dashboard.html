@@ -44,11 +44,20 @@
                     </div>
                 </div>
 
-                <div class = "empty-state">
-                    <div class = "file-icon">📁</div>
-                    <h3>Your files will appear here</h3>
-                    <p>File uploading & downloading will be integrated once the storage funtionality is integrated.</p>
-                </div>
+                {% if files %}
+    {% for file in files %}
+        <div class="file-item">
+            <div class="file-icon">📄</div>
+            <h3>{{ file["filename"] }}</h3>
+        </div>
+    {% endfor %}
+{% else %}
+    <div class="empty-state">
+        <div class="file-icon">📁</div>
+        <h3>Your files will appear here</h3>
+        <p>File uploading & downloading will be integrated once the storage functionality is integrated.</p>
+    </div>
+{% endif %}
             </section>
 
         </main>

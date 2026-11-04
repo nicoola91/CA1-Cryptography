@@ -1,4 +1,5 @@
 from flask import Blueprint, render_template, session, redirect, url_for
+from database import get_user_files
 
 main = Blueprint("main", __name__)
 
@@ -12,8 +13,11 @@ def home():
 def dashboard():
     if "user_id" not in session:
         return redirect(url_for("auth.login"))
+    user_id = session.get("user_id")
+    files = get_user_files(user_id)
 
     return render_template(
         "dashboard.html",
-        username = session.get("username")
+        username = session.get("username"),
+        files = files
     )
