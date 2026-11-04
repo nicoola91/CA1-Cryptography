@@ -10,6 +10,7 @@ def get_db_connection():
     
 
 def initialise_database():
+    
     connection=get_db_connection()
     
     connection.execute('''
@@ -32,5 +33,19 @@ def initialise_database():
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     ''')
+    
     connection.commit()
     connection.close()
+def get_user_files(user_id):
+    
+    connection=get_db_connection()
+    cursor = connection.execute(
+    "SELECT * FROM files WHERE user_id = ?",
+    (user_id,)
+    
+)
+    
+    files = cursor.fetchall()
+    print(files)
+    connection.close()
+    return files
