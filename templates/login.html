@@ -1,59 +1,200 @@
 <!DOCTYPE html>
-<html lang = "en">
+<html lang="en">
 
-    <head>
-        <meta charset = "UTF-8">
-        <meta name = "viewport" content = "width = device-width, initial-scale = 1.0">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-        <title>Login | SecureVault</title>
-        <link rel = "stylesheet" href = "{{url_for('static', filename='css/style.css') }}">
-    </head>
+    <title>Login | SecureVault</title>
 
-    <body class = "auth-page">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
 
-        <main class = "auth-card">
-            <div class = "brand">
-                <div class = "brand-icon">S</div>
-                <span>SecureVault</span>
-            </div>
+<body class="auth-page">
 
-            <h1>Welcome back!</h1>
-            <p class = "subtitle">Sign in to acces your secure files.</p>
+    <main class="auth-card">
 
-            {% with messages = get_flashed_messages() %}
-                {% for message in messages %}
-                    <div class = "alert"> {{message}} </div>
-                {% endfor %}
-            {% endwith %}
+        <div class="brand">
+            <div class="brand-icon">S</div>
+            <span>SecureVault</span>
+        </div>
 
-            <form method = "POST" action = "{{url_for('auth.login') }}">
-                <!--Enrty field for email login-->
-                <label for = "email">Email address</label>
-                <input
-                    type = "email"
-                    id = "email"
-                    name = "email"
-                    placeholder = "Enter your email"
-                    required>
+        <h1>Welcome back!</h1>
+        <p class="subtitle">Sign in to access your secure files.</p>
 
-                <!--Entry field for password login-->
-                <label for = "password">Password</label>
-                <input
-                    type = "password"
-                    id = "password"
-                    name = "password" 
-                    placeholder = "Enter your password" 
-                    required>
-                    
-                <button type = "submit" class = "btn-primary">Sign In</button>
-            </form>
+        {% with messages = get_flashed_messages() %}
+            {% for message in messages %}
+                <div class="alert">{{ message }}</div>
+            {% endfor %}
+        {% endwith %}
 
-            <p class = "auth-footer">
-                Don't have an account?
-                <a href = "{{url_for('auth.register') }}">Create an account</a>
-            </p>
+        <form id="loginForm" method="POST" action="{{ url_for('auth.login') }}">
 
-        </main>
+            <label for="email">Email address</label>
 
-    </body>
+            <input
+                type="email"
+                id="email"
+                name="email"
+                placeholder="Enter your email"
+                autocomplete="username"
+                required
+            >
+
+            <label for="password">Password</label>
+
+            <input
+                type="password"
+                id="password"
+                name="password"
+                placeholder="Enter your password"
+                autocomplete="current-password"
+                required
+            >
+
+            <button type="submit" class="btn-primary" id="loginButton">
+                Sign In
+            </button>
+
+            <p id="loginStatus" role="status"></p>
+
+        </form>
+
+        <p class="auth-footer">
+            Don't have an account?
+            <a href="{{ url_for('auth.register') }}">Create an account</a>
+        </p>
+
+    </main>
+
+    <script src="{{ url_for('static', filename='js/encryption.js') }}"></script>
+
+    <script>
+
+        const loginForm = document.getElementById("loginForm");
+
+        // Save the unlocked CryptoKey in IndexedDB
+        function saveMasterKey(key) {
+
+            return new Promise((resolve, reject) => {
+
+                const request = indexedDB.open("SecureVaultDB", 1);
+
+                request.onupgradeneeded = function(event) {
+
+                    const database = event.target.result;
+
+                    if (!database.objectStoreNames.contains("keys")) {
+                        database.createObjectStore("keys");
+                    }
+
+                };
+
+                request.onsuccess = function(event) {
+
+                    const database = event.target.result;
+
+                    const transaction = database.transaction(
+                        ["keys"],
+                        "readwrite"
+                    );
+
+                    transaction.objectStore("keys").put(
+                        key,
+                        "masterKey"
+                    );
+
+                    transaction.oncomplete = function() {
+                        database.close();
+                        resolve();
+                    };
+
+                    transaction.onerror = function() {
+                        database.close();
+                        reject(transaction.error);
+                    };
+
+                };
+
+                request.onerror = function() {
+                    reject(request.error);
+                };
+
+            });
+
+        }
+
+
+        // Handle login
+        loginForm.addEventListener("submit", async function(event) {
+
+            event.preventDefault();
+
+            const email = document.getElementById("email").value;
+            const password = document.getElementById("password").value;
+            const button = document.getElementById("loginButton");
+            const status = document.getElementById("loginStatus");
+
+            try {
+
+                button.disabled = true;
+                button.textContent = "Signing in...";
+                status.textContent = "";
+
+                // Send login details to Flask
+                const response = await fetch(
+                    "{{ url_for('auth.login') }}",
+                    {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        credentials: "same-origin",
+                        body: JSON.stringify({
+                            email: email,
+                            password: password
+                        })
+                    }
+                );
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.error || "Login failed.");
+                }
+
+                // Unlock the master encryption key
+                const masterKey = await unlockMasterKey(
+                    password,
+                    result.encrypted_master_key,
+                    result.key_salt,
+                    result.key_nonce
+                );
+
+                // Save the unlocked key for the dashboard
+                await saveMasterKey(masterKey);
+
+                // Clear the password field
+                document.getElementById("password").value = "";
+
+                // Open the dashboard
+                window.location.href = result.dashboard_url;
+
+            } catch (error) {
+
+                console.error("Login error:", error);
+
+                status.textContent =
+                    error.message || "Unable to sign in.";
+
+                button.disabled = false;
+                button.textContent = "Sign In";
+
+            }
+
+        });
+
+    </script>
+
+</body>
 </html>
