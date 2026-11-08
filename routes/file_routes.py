@@ -179,7 +179,7 @@ def download_file(file_id):
         file_path,
         mimetype="application/octet-stream",
         as_attachment=True,
-        download_name=file["storage_name"]
+        download_name=file["filename"]
     )
 
     # Include the encryption nonce in the response
