@@ -1,123 +1,166 @@
+
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
+    <!-- Sets the character format so text and symbols display correctly -->
     <meta charset="UTF-8">
+
+    <!-- Makes the page fit different screen sizes, including phones and computers -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+    <!-- Sets the title shown in the browser tab -->
     <title>Login | SecureVault</title>
 
+    <!-- Loads the CSS file that controls how the login page looks -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 
+<!-- Starts the page body and applies the auth-page styling -->
 <body class="auth-page">
 
+    <!-- Main section containing the login form -->
     <main class="auth-card">
 
+        <!-- Displays the SecureVault logo and name -->
         <div class="brand">
+
+            <!-- Displays the letter S as the logo -->
             <div class="brand-icon">S</div>
+
+            <!-- Displays the website name -->
             <span>SecureVault</span>
+
         </div>
 
+        <!-- Main heading on the login page -->
         <h1>Welcome back!</h1>
+
+        <!-- Short message explaining what the user can do -->
         <p class="subtitle">Sign in to access your secure files.</p>
 
+        <!-- Gets any messages sent from Flask -->
         {% with messages = get_flashed_messages() %}
+
+            <!-- Goes through each message -->
             {% for message in messages %}
+
+                <!-- Displays the message on the page -->
                 <div class="alert">{{ message }}</div>
+
+            <!-- Ends the message loop -->
             {% endfor %}
+
+        <!-- Ends the Flask message section -->
         {% endwith %}
 
+
+        <!-- Login form that sends the user's details to the Flask login route -->
         <form id="loginForm" method="POST" action="{{ url_for('auth.login') }}">
 
+            <!-- Label displayed above the email input -->
             <label for="email">Email address</label>
 
+            <!-- Input where the user enters their email address -->
             <input
-                type="email"
-                id="email"
-                name="email"
-                placeholder="Enter your email"
-                autocomplete="username"
-                required
+                type="email" <!-- Only accepts a valid email format -->
+                id="email" <!-- Gives the input an ID so JavaScript can find it -->
+                name="email" <!-- Names the value sent to the server -->
+                placeholder="Enter your email" <!-- Shows example text inside the box -->
+                autocomplete="username" <!-- Helps the browser recognise the login field -->
+                required <!-- Makes sure the user enters an email -->
             >
 
+            <!-- Label displayed above the password input -->
             <label for="password">Password</label>
 
+            <!-- Input where the user enters their password -->
             <input
-                type="password"
-                id="password"
-                name="password"
-                placeholder="Enter your password"
-                autocomplete="current-password"
-                required
+                type="password" <!-- Hides the password as the user types -->
+                id="password" <!-- Gives the input an ID for JavaScript -->
+                name="password" <!-- Names the value sent to the server -->
+                placeholder="Enter your password" <!-- Shows example text inside the box -->
+                autocomplete="current-password" <!-- Tells the browser this is the login password -->
+                required <!-- Makes sure the user enters a password -->
             >
 
+            <!-- Button that starts the login process -->
             <button type="submit" class="btn-primary" id="loginButton">
                 Sign In
             </button>
 
+            <!-- Displays login errors or other status messages -->
             <p id="loginStatus" role="status"></p>
 
+        <!-- Ends the login form -->
         </form>
 
+        <!-- Provides a link for users who do not have an account -->
         <p class="auth-footer">
             Don't have an account?
+
+            <!-- Sends the user to the registration page -->
             <a href="{{ url_for('auth.register') }}">Create an account</a>
         </p>
 
+    <!-- Ends the main login section -->
     </main>
 
+
+    <!-- Loads the JavaScript file containing the encryption functions -->
     <script src="{{ url_for('static', filename='js/encryption.js') }}"></script>
 
+
+    <!-- Starts the JavaScript used to handle the login process -->
     <script>
 
+        // Finds the login form using its ID
         const loginForm = document.getElementById("loginForm");
 
-        // Save the unlocked CryptoKey in IndexedDB
-        function saveMasterKey(key) {
 
+        // Opens the browser's IndexedDB database where the master key is stored
+        function openKeyDatabase() {
+
+            // Creates a Promise so the code can wait until the database opens
             return new Promise((resolve, reject) => {
 
+                // Opens a database called SecureVaultDB
+                // The number 1 is the database version
                 const request = indexedDB.open("SecureVaultDB", 1);
 
+
+                // Runs when the database is first created or its version changes
                 request.onupgradeneeded = function(event) {
 
+                    // Gets access to the database
                     const database = event.target.result;
 
+                    // Checks if a storage area called keys already exists
                     if (!database.objectStoreNames.contains("keys")) {
+
+                        // Creates the keys storage area if it does not exist
                         database.createObjectStore("keys");
+
                     }
 
                 };
 
+
+                // Runs when the database opens successfully
                 request.onsuccess = function(event) {
 
-                    const database = event.target.result;
-
-                    const transaction = database.transaction(
-                        ["keys"],
-                        "readwrite"
-                    );
-
-                    transaction.objectStore("keys").put(
-                        key,
-                        "masterKey"
-                    );
-
-                    transaction.oncomplete = function() {
-                        database.close();
-                        resolve();
-                    };
-
-                    transaction.onerror = function() {
-                        database.close();
-                        reject(transaction.error);
-                    };
+                    // Returns the opened database so other functions can use it
+                    resolve(event.target.result);
 
                 };
 
+
+                // Runs if the database fails to open
                 request.onerror = function() {
+
+                    // Reports the database error
                     reject(request.error);
+
                 };
 
             });
@@ -125,45 +168,143 @@
         }
 
 
-        // Handle login
+        // Saves the unlocked master encryption key for a specific user
+        async function saveMasterKey(userId, key) {
+
+            // Opens the IndexedDB database and waits for it to finish opening
+            const database = await openKeyDatabase();
+
+            // Creates a Promise to wait for the key to be saved
+            return new Promise((resolve, reject) => {
+
+                // Opens a transaction that allows information to be saved
+                const transaction = database.transaction(
+                    ["keys"],
+                    "readwrite"
+                );
+
+                // Saves the master key in the keys storage area
+                // The user ID is added to the name so each account has its own key
+                transaction.objectStore("keys").put(
+                    key,
+                    "masterKey_" + userId
+                );
+
+
+                // Runs when the key has been saved successfully
+                transaction.oncomplete = function() {
+
+                    // Closes the database connection
+                    database.close();
+
+                    // Tells the rest of the code that saving is complete
+                    resolve();
+
+                };
+
+
+                // Runs if saving the key fails
+                transaction.onerror = function() {
+
+                    // Closes the database connection
+                    database.close();
+
+                    // Reports the saving error
+                    reject(transaction.error);
+
+                };
+
+            });
+
+        }
+
+
+        // Runs this code when the user submits the login form
         loginForm.addEventListener("submit", async function(event) {
 
+            // Stops the form from refreshing the page automatically
+            // JavaScript will handle the login process instead
             event.preventDefault();
 
+
+            // Gets the email entered by the user
             const email = document.getElementById("email").value;
+
+            // Gets the password entered by the user
             const password = document.getElementById("password").value;
+
+            // Finds the login button so its text and state can be changed
             const button = document.getElementById("loginButton");
+
+            // Finds the area where login messages will be displayed
             const status = document.getElementById("loginStatus");
 
+
+            // Starts error handling in case something goes wrong
             try {
 
+                // Disables the button so it cannot be clicked repeatedly
                 button.disabled = true;
+
+                // Changes the button text while login is processing
                 button.textContent = "Signing in...";
+
+                // Clears any previous error message
                 status.textContent = "";
 
-                // Send login details to Flask
+
+                // Sends the login details to the Flask server
                 const response = await fetch(
+
+                    // Gets the URL for the Flask login route
                     "{{ url_for('auth.login') }}",
+
                     {
+                        // Uses POST to send information to the server
                         method: "POST",
+
+                        // Tells Flask that the information is being sent as JSON
                         headers: {
                             "Content-Type": "application/json"
                         },
+
+                        // Allows the browser to send and receive the Flask session cookie
                         credentials: "same-origin",
+
+                        // Converts the email and password into JSON format
                         body: JSON.stringify({
                             email: email,
                             password: password
                         })
+
                     }
                 );
 
+
+                // Reads the response from Flask and converts it into JavaScript data
                 const result = await response.json();
 
+
+                // Checks whether Flask returned a successful login response
                 if (!response.ok) {
+
+                    // Stops the login process and displays the error from Flask
                     throw new Error(result.error || "Login failed.");
+
                 }
 
-                // Unlock the master encryption key
+
+                // Checks that Flask returned the user's account ID
+                if (!result.user_id) {
+
+                    // Stops the login process if the user ID is missing
+                    throw new Error("User ID was not returned by the server.");
+
+                }
+
+
+                // Uses the user's password to unlock their master encryption key
+                // The encrypted key, salt and nonce are received from Flask
                 const masterKey = await unlockMasterKey(
                     password,
                     result.encrypted_master_key,
@@ -171,30 +312,47 @@
                     result.key_nonce
                 );
 
-                // Save the unlocked key for the dashboard
-                await saveMasterKey(masterKey);
 
-                // Clear the password field
+                // Saves the unlocked master key in IndexedDB
+                // The user's ID keeps each account's key separate
+                await saveMasterKey(
+                    result.user_id,
+                    masterKey
+                );
+
+
+                // Clears the password from the login form
                 document.getElementById("password").value = "";
 
-                // Open the dashboard
+
+                // Redirects the user to their dashboard after successful login
                 window.location.href = result.dashboard_url;
+
 
             } catch (error) {
 
+                // Prints the error in the browser console for debugging
                 console.error("Login error:", error);
 
+                // Displays the error message on the login page
                 status.textContent =
                     error.message || "Unable to sign in.";
 
+                // Enables the login button again so the user can retry
                 button.disabled = false;
+
+                // Changes the button text back to Sign In
                 button.textContent = "Sign In";
 
             }
 
         });
 
+    // Ends the login JavaScript
     </script>
 
+<!-- Ends the page body -->
 </body>
+
+<!-- Ends the HTML document -->
 </html>
