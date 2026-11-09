@@ -1,3 +1,4 @@
+
 import sqlite3
 
 DATABASE = "users.db"
@@ -10,8 +11,8 @@ def get_db_connection():
     return connection
 
 
-
 def initialise_database():
+
     connection = get_db_connection()
 
     try:
@@ -33,12 +34,14 @@ def initialise_database():
         connection.execute('''
             CREATE TABLE IF NOT EXISTS files (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                user_id INTEGER NOT NULL REFERENCES users(id),
+                user_id INTEGER NOT NULL,
                 filename TEXT NOT NULL,
                 storage_name TEXT NOT NULL,
                 nonce TEXT NOT NULL,
                 salt TEXT,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users(id)
+                    ON DELETE CASCADE
             )
         ''')
 
@@ -69,11 +72,16 @@ def initialise_database():
                 "ALTER TABLE files ADD COLUMN salt TEXT"
             )
 
+        # Index to make account-specific file lookups faster
+        connection.execute('''
+            CREATE INDEX IF NOT EXISTS idx_files_user_id
+            ON files(user_id)
+        ''')
+
         connection.commit()
 
     finally:
         connection.close()
-
 
 
 def get_user_files(user_id):
@@ -81,12 +89,15 @@ def get_user_files(user_id):
     connection = get_db_connection()
 
     try:
-        cursor = connection.execute(
-            "SELECT * FROM files WHERE user_id = ?",
+        files = connection.execute(
+            '''
+            SELECT *
+            FROM files
+            WHERE user_id = ?
+            ORDER BY created_at DESC
+            ''',
             (user_id,)
-        )
-
-        files = cursor.fetchall()
+        ).fetchall()
 
         return files
 

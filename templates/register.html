@@ -1,39 +1,78 @@
+
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
 
+    <!-- Sets the character format so text displays correctly -->
     <meta charset="UTF-8">
+
+    <!-- Makes the page fit different screen sizes, including phones and computers -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+    <!-- Sets the title displayed in the browser tab -->
     <title>Create Account | SecureVault</title>
 
+    <!-- Loads the CSS file that controls how the registration page looks -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 
 </head>
 
+
+<!-- Starts the page body and applies the authentication page styling -->
 <body class="auth-page">
 
+
+    <!-- Main section containing the registration form -->
     <main class="auth-card">
 
+
+        <!-- Displays the SecureVault logo and website name -->
         <div class="brand">
+
+            <!-- Displays the letter S as the website logo -->
             <div class="brand-icon">S</div>
+
+            <!-- Displays the website name -->
             <span>SecureVault</span>
+
         </div>
 
+
+        <!-- Main heading displayed on the registration page -->
         <h1>Create your account!</h1>
+
+        <!-- Short message explaining what the website does -->
         <p class="subtitle">Securely store and manage your files.</p>
 
+
+
+        <!-- Gets any messages sent from Flask -->
         {% with messages = get_flashed_messages() %}
+
+            <!-- Goes through each message -->
             {% for message in messages %}
+
+                <!-- Displays the message on the registration page -->
                 <div class="alert">{{ message }}</div>
+
+            <!-- Ends the message loop -->
             {% endfor %}
+
+        <!-- Ends the Flask message section -->
         {% endwith %}
 
+
+
+        <!-- Registration form that sends the user's details to Flask -->
         <form id="registerForm" method="POST" action="{{ url_for('auth.register') }}">
 
+
+            <!-- Label displayed above the username input -->
             <label for="username">Username</label>
 
+
+            <!-- Input where the user enters their chosen username -->
             <input
                 type="text"
                 id="username"
@@ -42,9 +81,14 @@
                 autocomplete="username"
                 required
             >
+            <!-- The required attribute makes sure the user enters a username -->
 
+
+            <!-- Label displayed above the email input -->
             <label for="email">Email address</label>
 
+
+            <!-- Input where the user enters their email address -->
             <input
                 type="email"
                 id="email"
@@ -53,9 +97,14 @@
                 autocomplete="email"
                 required
             >
+            <!-- The email input checks that the address has a valid email format -->
 
+
+            <!-- Label displayed above the password input -->
             <label for="password">Password</label>
 
+
+            <!-- Input where the user creates their account password -->
             <input
                 type="password"
                 id="password"
@@ -65,78 +114,193 @@
                 autocomplete="new-password"
                 required
             >
+            <!-- type="password" hides the password while the user types -->
+            <!-- minlength="8" requires the password to contain at least 8 characters -->
 
+
+            <!-- Button that starts the account registration process -->
             <button type="submit" class="btn-primary" id="registerButton">
                 Create Account
             </button>
 
+
+        <!-- Ends the registration form -->
         </form>
 
+
+
+        <!-- Provides a link for users who already have an account -->
         <p class="auth-footer">
+
             Already have an account?
+
+            <!-- Sends the user to the login page -->
             <a href="{{ url_for('auth.login') }}">Sign in</a>
+
         </p>
 
+
+    <!-- Ends the main registration section -->
     </main>
 
+
+
+    <!-- Loads the JavaScript file containing the encryption functions -->
     <script src="{{ url_for('static', filename='js/encryption.js') }}"></script>
 
+
+
+    <!-- Starts the JavaScript used to handle registration and encryption -->
     <script>
 
+
+        // Finds the registration form using its ID
         const registerForm = document.getElementById("registerForm");
 
+
+
+        // Runs this code when the user submits the registration form
         registerForm.addEventListener("submit", async function(event) {
 
+
+            // Stops the form from submitting automatically
+            // JavaScript will handle the encryption before sending the form
             event.preventDefault();
 
+
+
+            // Gets the password entered by the user
             const password = document.getElementById("password").value;
+
+
+            // Finds the Create Account button so its text and state can be changed
             const registerButton = document.getElementById("registerButton");
 
+
+
+            // Starts error handling in case something goes wrong
             try {
 
+
+                // Disables the button to prevent repeated submissions
                 registerButton.disabled = true;
+
+
+                // Changes the button text while the account is being created
                 registerButton.textContent = "Creating account...";
 
-                // Generate and protect the master encryption key
+
+
+                // Calls the function from encryption.js to create a master encryption key
+                // The password is used to protect this key
                 const protectedKey = await createProtectedMasterKey(password);
 
-                // Add the protected key information to the form
+
+
+                // Creates a hidden input to hold the encrypted master key
+                // Hidden inputs are not displayed on the registration page
                 const encryptedKeyInput = document.createElement("input");
+
+
+                // Sets the input type to hidden
                 encryptedKeyInput.type = "hidden";
+
+
+                // Gives the input the name expected by the Flask backend
                 encryptedKeyInput.name = "encrypted_master_key";
+
+
+                // Stores the encrypted master key inside the hidden input
                 encryptedKeyInput.value = protectedKey.encryptedMasterKey;
 
+
+
+                // Creates another hidden input to hold the key salt
                 const saltInput = document.createElement("input");
+
+
+                // Sets the input type to hidden
                 saltInput.type = "hidden";
+
+
+                // Gives the input the name expected by Flask
                 saltInput.name = "key_salt";
+
+
+                // Stores the random salt created during encryption
                 saltInput.value = protectedKey.keySalt;
 
+
+
+                // Creates another hidden input to hold the key nonce
                 const nonceInput = document.createElement("input");
+
+
+                // Sets the input type to hidden
                 nonceInput.type = "hidden";
+
+
+                // Gives the input the name expected by Flask
                 nonceInput.name = "key_nonce";
+
+
+                // Stores the nonce used to encrypt the master key
                 nonceInput.value = protectedKey.keyNonce;
 
+
+
+                // Adds the encrypted master key information to the registration form
                 registerForm.appendChild(encryptedKeyInput);
+
+
+                // Adds the salt to the registration form
                 registerForm.appendChild(saltInput);
+
+
+                // Adds the nonce to the registration form
                 registerForm.appendChild(nonceInput);
 
-                // Submit the registration form to Flask
+
+
+                // Submits the completed registration form to the Flask server
+                // Flask receives the username, email, password and encryption information
                 registerForm.submit();
+
+
 
             } catch (error) {
 
+
+                // Prints the registration error in the browser console
                 console.error("Registration error:", error);
 
+
+
+                // Displays a message if the encryption key could not be created
                 alert("Unable to create your encryption key. Please try again.");
 
+
+
+                // Enables the registration button again so the user can retry
                 registerButton.disabled = false;
+
+
+                // Changes the button text back to Create Account
                 registerButton.textContent = "Create Account";
+
 
             }
 
         });
 
+
+    // Ends the registration JavaScript
     </script>
 
+
+<!-- Ends the page body -->
 </body>
+
+
+<!-- Ends the HTML document -->
 </html>
