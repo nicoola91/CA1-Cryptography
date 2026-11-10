@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 
@@ -11,11 +10,12 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 
-<body class="topbar">
+<body>
 
+    <!-- Navigation Bar -->
     <header class="topbar">
 
-        <div class="dashboard-page">
+        <div class="brand">
             <div class="brand-icon">S</div>
             <span>SecureVault</span>
         </div>
@@ -90,35 +90,47 @@
                     <h2>My Files</h2>
                     <p>Your personal secure file storage.</p>
                 </div>
+
+                {% if files %}
+                    <span class="file-count">
+                        {{ files|length }} files
+                    </span>
+                {% endif %}
             </div>
 
             {% if files %}
 
-                {% for file in files %}
+                <div class="file-grid">
 
-                    <div class="file-item">
+                    {% for file in files %}
 
-                        <div class="file-icon">📄</div>
+                        <div class="file-item">
 
-                        <h3>{{ file["filename"] }}</h3>
+                            <div class="file-icon">📄</div>
 
-                        <button
-                            type="button"
-                            class="btn-logout download-button"
-                            data-file-id="{{ file['id'] }}"
-                            data-filename="{{ file['filename'] }}"
-                        >
-                            Download
-                        </button>
+                            <h3 title="{{ file['filename'] }}">
+                                {{ file["filename"] }}
+                            </h3>
 
-                        <p
-                            id="downloadStatus{{ file['id'] }}"
-                            role="status"
-                        ></p>
+                            <button
+                                type="button"
+                                class="btn-logout download-button"
+                                data-file-id="{{ file['id'] }}"
+                                data-filename="{{ file['filename'] }}"
+                            >
+                                Download
+                            </button>
 
-                    </div>
+                            <p
+                                id="downloadStatus{{ file['id'] }}"
+                                role="status"
+                            ></p>
 
-                {% endfor %}
+                        </div>
+
+                    {% endfor %}
+
+                </div>
 
             {% else %}
 
