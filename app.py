@@ -17,7 +17,7 @@ app.config["SECRET_KEY"] = os.environ.get("FLASK_SECRET_KEY")
 if not app.config["SECRET_KEY"]:
     raise RuntimeError(
         "FLASK_SECRET_KEY is missing. "
-        "Set it in PowerShell before starting Flask."
+        "Set it in PowerShell before starting Flask. "
     )
 
 app.register_blueprint(auth)
