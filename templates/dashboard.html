@@ -1,132 +1,69 @@
-
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
-
-    <!-- Sets the character format so text displays correctly -->
     <meta charset="UTF-8">
-
-    <!-- Makes the dashboard fit different screen sizes -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <!-- Sets the title displayed in the browser tab -->
     <title>Dashboard | SecureVault</title>
 
-    <!-- Loads the CSS file that controls the appearance of the dashboard -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-
 </head>
 
-
-<!-- Starts the page body and applies the topbar styling -->
 <body class="topbar">
 
-
-    <!-- Header displayed at the top of the dashboard -->
     <header class="topbar">
 
-        <!-- Displays the SecureVault logo and website name -->
         <div class="dashboard-page">
-
-            <!-- Displays the letter S as the website logo -->
             <div class="brand-icon">S</div>
-
-            <!-- Displays the website name -->
             <span>SecureVault</span>
-
         </div>
 
-
-        <!-- Form used to log the user out of their account -->
         <form id="logoutForm" method="POST" action="{{ url_for('auth.logout') }}">
-
-            <!-- Button that starts the logout process -->
             <button type="submit" class="btn-logout">Log Out</button>
-
         </form>
 
     </header>
 
-
-
-    <!-- Main section containing the dashboard content -->
     <main class="dashboard-container">
 
-
-        <!-- Welcome section showing the logged-in user's name -->
+        <!-- Welcome Section -->
         <section class="welcome-section">
-
-            <!-- Flask displays the username of the logged-in user -->
             <h1>Welcome, {{ username }}!</h1>
-
-            <!-- Short message explaining the dashboard -->
             <p>Manage your files securely from one place.</p>
-
         </section>
 
-
-
-        <!-- Security section showing the encryption key status -->
+        <!-- Security Status -->
         <section class="security-card">
-
             <div>
-
-                <!-- Heading explaining that the account is protected -->
                 <h3>Your account is protected</h3>
-
-                <!-- JavaScript updates this message when the encryption key loads -->
                 <p id="keyStatus">Checking your encryption key...</p>
-
             </div>
-
         </section>
 
-
-
-        <!-- Section where users can upload files -->
+        <!-- File Upload Section -->
         <section class="files-section">
 
-
-            <!-- Heading for the file upload section -->
             <div class="section-heading">
-
                 <div>
-
-                    <!-- Section title -->
                     <h2>Save a File</h2>
-
-                    <!-- Short explanation of the upload feature -->
                     <p>Upload and securely store your files.</p>
-
                 </div>
-
             </div>
 
-
-
-            <!-- Card containing the file upload form -->
             <div class="upload-card">
 
-                <!-- Form used to select and upload a file -->
                 <form id="uploadForm">
 
-
-                    <!-- Label displayed above the file selection box -->
                     <label for="fileInput">Choose a file</label>
 
-
-                    <!-- Allows the user to choose a file from their device -->
                     <input
                         type="file"
                         id="fileInput"
                         required
                         disabled
                     >
-                    <!-- The disabled attribute prevents uploading until the encryption key loads -->
 
-
-                    <!-- Button used to encrypt and save the selected file -->
                     <button
                         type="submit"
                         class="btn-logout"
@@ -135,63 +72,35 @@
                     >
                         Save
                     </button>
-                    <!-- This button is also disabled until the encryption key is ready -->
-
 
                 </form>
 
-
-                <!-- Displays messages about the upload process -->
                 <p id="uploadStatus" role="status"></p>
 
             </div>
 
         </section>
 
-
-
-        <!-- Section displaying files belonging to the logged-in user -->
+        <!-- Stored Files Section -->
         <section class="files-section">
 
-
-            <!-- Heading for the stored files section -->
             <div class="section-heading">
-
                 <div>
-
-                    <!-- Section title -->
                     <h2>My Files</h2>
-
-                    <!-- Explains that this section contains the user's files -->
                     <p>Your personal secure file storage.</p>
-
                 </div>
-
             </div>
 
-
-
-            <!-- Flask checks whether the user has any stored files -->
             {% if files %}
 
-
-                <!-- Goes through each file belonging to the logged-in user -->
                 {% for file in files %}
 
-
-                    <!-- Displays information about one stored file -->
                     <div class="file-item">
 
-
-                        <!-- Displays an icon beside the filename -->
                         <div class="file-icon">📄</div>
 
-
-                        <!-- Displays the original filename stored in the database -->
                         <h3>{{ file["filename"] }}</h3>
 
-
-                        <!-- Button used to download and decrypt this particular file -->
                         <button
                             type="button"
                             class="btn-logout download-button"
@@ -201,701 +110,336 @@
                             Download
                         </button>
 
-                        <!-- Stores the file ID and filename so JavaScript knows which file to download -->
-
-
-                        <!-- Displays download or decryption messages for this file -->
                         <p
                             id="downloadStatus{{ file['id'] }}"
                             role="status"
                         ></p>
 
-
                     </div>
 
-
-                <!-- Ends the loop through the user's files -->
                 {% endfor %}
 
-
-            <!-- Runs if the user does not have any uploaded files -->
             {% else %}
 
-
-                <!-- Displays a message when the user has no files -->
                 <div class="empty-state">
 
-                    <!-- Displays a folder icon -->
                     <div class="file-icon">📁</div>
 
-                    <!-- Heading explaining that no files have been uploaded yet -->
                     <h3>Your files will appear here</h3>
 
-                    <!-- Explains that uploaded files will appear in this section -->
                     <p>Your encrypted files will appear here after uploading.</p>
 
                 </div>
 
-
-            <!-- Ends the if and else statement -->
             {% endif %}
-
 
         </section>
 
-
-    <!-- Ends the main dashboard section -->
     </main>
 
-
-
-    <!-- Loads the JavaScript file containing the encryption and decryption functions -->
     <script src="{{ url_for('static', filename='js/encryption.js') }}"></script>
 
-
-
-    <!-- Starts the JavaScript used to control the dashboard -->
     <script>
 
-
-        // Gets the ID of the user currently logged in
-        // Flask gets this ID from the user's session
-        // The ID helps keep each account's encryption key separate
-        const currentUserId = {{ session["user_id"] | tojson }};
-
-
-
-        // Opens the browser's IndexedDB database
-        // This database is used to store the user's unlocked master encryption key
+        // Open the IndexedDB database
         function openKeyDatabase() {
 
-
-            // Creates a Promise so the code can wait for the database to open
             return new Promise((resolve, reject) => {
 
-
-                // Opens a database called SecureVaultDB
-                // The number 1 represents the database version
                 const request = indexedDB.open("SecureVaultDB", 1);
 
-
-
-                // Runs when the database is first created or its version changes
                 request.onupgradeneeded = function(event) {
 
-
-                    // Gets access to the database
                     const database = event.target.result;
 
-
-                    // Checks whether a storage area called keys already exists
                     if (!database.objectStoreNames.contains("keys")) {
-
-                        // Creates the keys storage area if it does not exist
                         database.createObjectStore("keys");
-
                     }
 
                 };
 
-
-
-                // Runs when the database opens successfully
                 request.onsuccess = function(event) {
-
-                    // Returns the opened database so other functions can use it
                     resolve(event.target.result);
-
                 };
 
-
-
-                // Runs if the database cannot be opened
                 request.onerror = function() {
-
-                    // Reports the database error
                     reject(request.error);
-
                 };
-
 
             });
 
         }
 
 
+        // Retrieve the master key from IndexedDB
+        async function getMasterKey() {
 
-        // Retrieves the master encryption key belonging to a specific user
-        async function getMasterKey(userId) {
-
-
-            // Opens the IndexedDB database and waits for it to finish opening
             const database = await openKeyDatabase();
 
-
-            // Creates a Promise to wait for the key to be retrieved
             return new Promise((resolve, reject) => {
 
-
-                // Opens a transaction that allows information to be read
                 const transaction = database.transaction(
                     ["keys"],
                     "readonly"
                 );
 
-
-                // Searches the keys storage area for this user's master key
-                // The user ID makes sure the correct account's key is retrieved
                 const request = transaction
                     .objectStore("keys")
-                    .get("masterKey_" + userId);
+                    .get("masterKey");
 
-
-
-                // Runs when the key has been retrieved successfully
                 request.onsuccess = function() {
-
-                    // Closes the database connection
                     database.close();
-
-                    // Returns the retrieved master key
                     resolve(request.result);
-
                 };
 
-
-
-                // Runs if the key cannot be retrieved
                 request.onerror = function() {
-
-                    // Closes the database connection
                     database.close();
-
-                    // Reports the error
                     reject(request.error);
-
                 };
-
 
             });
 
         }
 
 
+        // Delete the saved master key
+        async function deleteMasterKey() {
 
-        // Deletes the saved master encryption key belonging to a specific user
-        async function deleteMasterKey(userId) {
-
-
-            // Opens the IndexedDB database
             const database = await openKeyDatabase();
 
-
-            // Creates a Promise to wait for the deletion to finish
             return new Promise((resolve, reject) => {
 
-
-                // Opens a transaction that allows information to be changed
                 const transaction = database.transaction(
                     ["keys"],
                     "readwrite"
                 );
 
+                transaction.objectStore("keys").delete("masterKey");
 
-                // Deletes only the master key belonging to this user
-                transaction.objectStore("keys").delete(
-                    "masterKey_" + userId
-                );
-
-
-
-                // Runs when the key has been deleted successfully
                 transaction.oncomplete = function() {
-
-                    // Closes the database connection
                     database.close();
-
-                    // Confirms that the deletion is complete
                     resolve();
-
                 };
 
-
-
-                // Runs if deleting the key fails
                 transaction.onerror = function() {
-
-                    // Closes the database connection
                     database.close();
-
-                    // Reports the deletion error
                     reject(transaction.error);
-
                 };
-
 
             });
 
         }
 
 
-
-        // Loads the encryption key when the dashboard opens
+        // Load the encryption key when the dashboard opens
         async function initialiseDashboard() {
 
-
-            // Finds the area where the encryption key status is displayed
             const keyStatus = document.getElementById("keyStatus");
-
-            // Finds the file selection input
             const fileInput = document.getElementById("fileInput");
-
-            // Finds the Save button
             const saveButton = document.getElementById("saveButton");
 
-
-            // Starts error handling in case something goes wrong
             try {
 
+                const masterKey = await getMasterKey();
 
-                // Retrieves the master key belonging to the logged-in user
-                const masterKey = await getMasterKey(currentUserId);
-
-
-
-                // Checks whether a master key was found
                 if (!masterKey) {
 
-
-                    // Displays an error if the encryption key cannot be found
                     keyStatus.textContent =
                         "Encryption key not found. Please log in again.";
 
-
-                    // Stops the function because the key is missing
                     return;
-
                 }
 
-
-
-                // Makes the master key available to the other dashboard functions
-                // This key is used to encrypt and decrypt files
                 window.secureVaultEncryptionKey = masterKey;
 
-
-
-                // Updates the security message to show that the key is ready
                 keyStatus.textContent =
                     "Your encryption key is ready.";
 
-
-
-                // Enables the file selection box
                 fileInput.disabled = false;
-
-                // Enables the Save button
                 saveButton.disabled = false;
-
 
             } catch (error) {
 
-
-                // Prints the error in the browser console
                 console.error("Key loading error:", error);
 
-
-                // Displays a message if the key cannot be loaded
                 keyStatus.textContent =
                     "Unable to load your encryption key.";
-
 
             }
 
         }
 
 
-
-        // Gets the upload form from the dashboard
+        // Handle file uploads
         const uploadForm = document.getElementById("uploadForm");
 
-
-        // Runs this code when the user submits the upload form
         uploadForm.addEventListener("submit", async function(event) {
 
-
-            // Stops the form from refreshing the page automatically
             event.preventDefault();
 
-
-
-            // Gets the file selected by the user
             const file = document.getElementById("fileInput").files[0];
-
-            // Gets the area where upload messages are displayed
             const status = document.getElementById("uploadStatus");
-
-            // Gets the Save button
             const saveButton = document.getElementById("saveButton");
 
-
-
-            // Checks whether the user selected a file
             if (!file) {
-
-                // Displays a message if no file was selected
                 status.textContent = "Please choose a file.";
-
-                // Stops the upload process
                 return;
-
             }
 
-
-
-            // Starts error handling in case the upload fails
             try {
 
-
-                // Disables the Save button while the upload is happening
                 saveButton.disabled = true;
 
-
-
-                // Displays a message while the file is being encrypted and uploaded
                 status.textContent =
                     "Encrypting and uploading file...";
 
-
-
-                // Checks whether the user's master encryption key is available
                 if (!window.secureVaultEncryptionKey) {
-
-                    // Stops the upload if the encryption key is missing
-                    throw new Error(
-                        "Encryption key is not available. Please log in again."
-                    );
-
+                    throw new Error("Encryption key is not available. Please log in again.");
                 }
 
-
-
-                // Calls the uploadEncryptedFile function from encryption.js
-                // The function encrypts the file in the browser before uploading it
                 await uploadEncryptedFile(
                     file,
-
-                    // Passes the user's master encryption key to the function
                     window.secureVaultEncryptionKey
                 );
 
-
-
-                // Displays a message when the file has been saved successfully
                 status.textContent = "File saved successfully!";
 
-
-
-                // Refreshes the dashboard so the newly uploaded file appears
                 window.location.reload();
-
-
 
             } catch (error) {
 
-
-                // Prints the upload error in the browser console
                 console.error("Upload error:", error);
 
-
-
-                // Displays the error message on the dashboard
                 status.textContent =
                     error.message || "Unable to save file.";
 
-
-
-                // Enables the Save button again so the user can retry
                 saveButton.disabled = false;
-
 
             }
 
         });
 
 
-
-        // Downloads an encrypted file and decrypts it in the browser
+        // Download and decrypt a stored file
         async function downloadFile(fileId, fileName) {
 
-
-            // Finds the status message belonging to this particular file
             const status = document.getElementById(
                 "downloadStatus" + fileId
             );
 
-
-
-            // Starts error handling in case the download or decryption fails
             try {
 
-
-                // Displays a message while the encrypted file is downloading
                 status.textContent = "Downloading encrypted file...";
 
-
-
-                // Checks whether the user's master encryption key is available
                 if (!window.secureVaultEncryptionKey) {
-
-                    // Stops the download if the key is missing
-                    throw new Error(
-                        "Encryption key is not available. Please log in again."
-                    );
-
+                    throw new Error("Encryption key is not available. Please log in again.");
                 }
 
-
-
-                // Sends a request to Flask to download the encrypted file
+                // Request the encrypted file from Flask
                 const response = await fetch(
-
-                    // Adds the selected file's ID to the download URL
                     "/download/" + encodeURIComponent(fileId),
-
                     {
-                        // Uses GET to request the file from the server
                         method: "GET",
-
-                        // Sends the Flask session cookie with the request
                         credentials: "same-origin"
                     }
-
                 );
 
-
-
-                // Checks whether the server returned an error
                 if (!response.ok) {
 
+                    const result = await response.json();
 
-                    // Gets the type of information returned by the server
-                    const contentType =
-                        response.headers.get("content-type") || "";
-
-
-
-                    // Checks whether Flask returned an error in JSON format
-                    if (contentType.includes("application/json")) {
-
-
-                        // Reads the error information from Flask
-                        const result = await response.json();
-
-
-
-                        // Displays the error message returned by Flask
-                        throw new Error(
-                            result.error || "Download failed."
-                        );
-
-
-                    } else {
-
-
-                        // Displays an error if the server returned something other than JSON
-                        throw new Error(
-                            "Download failed. HTTP error: " + response.status
-                        );
-
-
-                    }
-
-                }
-
-
-
-                // Gets the encryption nonce sent back by Flask
-                // The nonce is needed to decrypt the file
-                const nonce = response.headers.get("X-File-Nonce");
-
-
-
-                // Checks whether the nonce was received
-                if (!nonce) {
-
-                    // Stops the download if the encryption information is missing
                     throw new Error(
-                        "Encryption information is missing."
+                        result.error || "Download failed."
                     );
 
                 }
 
+                // Retrieve the nonce from the response
+                const nonce = response.headers.get("X-File-Nonce");
 
+                if (!nonce) {
+                    throw new Error("Encryption information is missing.");
+                }
 
-                // Converts the Base64 nonce into bytes
-                // AES-GCM needs the nonce in this format
+                // Convert the nonce from Base64
                 const iv = fromBase64(nonce);
 
-
-
-                // Reads the downloaded encrypted file as binary data
+                // Retrieve the encrypted file
                 const encryptedData = await response.arrayBuffer();
 
-
-
-                // Updates the message while the file is being decrypted
                 status.textContent = "Decrypting file...";
 
-
-
-                // Calls the decryptFile function from encryption.js
-                // This uses the master key to turn the encrypted data back into the original file
+                // Decrypt and download the original file
                 await decryptFile(
-
-                    // The encrypted file downloaded from Flask
                     encryptedData,
-
-                    // The logged-in user's master encryption key
                     window.secureVaultEncryptionKey,
-
-                    // The nonce needed for AES-GCM decryption
                     iv,
-
-                    // The original filename
                     fileName,
-
-                    // The file type used when creating the downloaded file
                     "application/octet-stream"
-
                 );
 
-
-
-                // Displays a success message after the download and decryption
                 status.textContent = "File downloaded successfully!";
-
-
 
             } catch (error) {
 
-
-                // Prints the download or decryption error in the browser console
                 console.error("Download error:", error);
 
-
-
-                // Displays the error message on the dashboard
                 status.textContent =
                     error.message || "Unable to download file.";
-
 
             }
 
         }
 
 
-
-        // Finds all buttons used to download files
+        // Connect each Download button to its file
         document.querySelectorAll(".download-button").forEach(button => {
 
-
-            // Adds a click event to each Download button
             button.addEventListener("click", async function() {
 
-
-                // Gets the file ID stored in the button's data attribute
                 const fileId = this.dataset.fileId;
-
-
-                // Gets the filename stored in the button's data attribute
                 const fileName = this.dataset.filename;
 
-
-
-                // Disables the button while the file is downloading
                 this.disabled = true;
 
-
-
-                // Calls the downloadFile function with the selected file's details
                 await downloadFile(fileId, fileName);
 
-
-
-                // Enables the Download button again when the process finishes
                 this.disabled = false;
-
 
             });
 
         });
 
 
-
-        // Gets the logout form from the dashboard
+        // Clear the saved key when logging out
         const logoutForm = document.getElementById("logoutForm");
 
-
-        // Runs this code when the user clicks the Log Out button
         logoutForm.addEventListener("submit", async function(event) {
 
-
-            // Stops the form from submitting immediately
-            // This gives JavaScript time to remove the saved encryption key
             event.preventDefault();
 
-
-
-            // Starts error handling for the key deletion
             try {
 
-
-                // Deletes the saved master key belonging to this user
-                await deleteMasterKey(currentUserId);
-
-
+                await deleteMasterKey();
 
             } catch (error) {
 
-
-                // Prints an error if the key could not be deleted
-                console.error(
-                    "Unable to clear encryption key:",
-                    error
-                );
-
+                console.error("Unable to clear encryption key:", error);
 
             }
 
-
-
-            // Removes the master key from the current page's JavaScript memory
             window.secureVaultEncryptionKey = null;
 
-
-
-            // Submits the logout form to Flask
-            // Flask then clears the user's login session
             logoutForm.submit();
-
 
         });
 
 
-
-        // Starts the dashboard when the page finishes loading
-        // This checks whether the user's master encryption key is available
+        // Start the dashboard
         initialiseDashboard();
 
-
-    // Ends the dashboard JavaScript
     </script>
 
-
-<!-- Ends the page body -->
 </body>
 
-
-<!-- Ends the HTML document -->
 </html>
