@@ -265,7 +265,52 @@ a:hover {
     line-height: 1.6;
 }
 
-/* RESPONSIVE */
+/* FILE GRID */
+
+.file-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 15px;
+    max-height: 420px;
+    overflow-y: auto;
+}
+
+/* FILE CARDS */
+
+.file-grid .file-item {
+    padding: 15px;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    background-color: #f8fafc;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+/* FILE NAME */
+
+.file-grid .file-item h3 {
+    width: 100%;
+    font-size: 14px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* DOWNLOAD BUTTON */
+
+.file-grid .download-button {
+    margin-top: auto;
+}
+
+/* FILE COUNT */
+
+.file-count {
+    color: #64748b;
+    font-size: 14px;
+}
+
+/* MOBILE */
 
 @media (max-width: 600px) {
     .auth-card {
@@ -282,5 +327,9 @@ a:hover {
 
     .welcome-section h1 {
         font-size: 25px;
+    }
+
+    .file-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 }
