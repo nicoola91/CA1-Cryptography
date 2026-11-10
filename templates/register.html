@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 
@@ -80,63 +81,7 @@
     </main>
 
     <script src="{{ url_for('static', filename='js/encryption.js') }}"></script>
-
-    <script>
-
-        const registerForm = document.getElementById("registerForm");
-
-        registerForm.addEventListener("submit", async function(event) {
-
-            event.preventDefault();
-
-            const password = document.getElementById("password").value;
-            const registerButton = document.getElementById("registerButton");
-
-            try {
-
-                registerButton.disabled = true;
-                registerButton.textContent = "Creating account...";
-
-                // Generate and protect the master encryption key
-                const protectedKey = await createProtectedMasterKey(password);
-
-                // Add the protected key information to the form
-                const encryptedKeyInput = document.createElement("input");
-                encryptedKeyInput.type = "hidden";
-                encryptedKeyInput.name = "encrypted_master_key";
-                encryptedKeyInput.value = protectedKey.encryptedMasterKey;
-
-                const saltInput = document.createElement("input");
-                saltInput.type = "hidden";
-                saltInput.name = "key_salt";
-                saltInput.value = protectedKey.keySalt;
-
-                const nonceInput = document.createElement("input");
-                nonceInput.type = "hidden";
-                nonceInput.name = "key_nonce";
-                nonceInput.value = protectedKey.keyNonce;
-
-                registerForm.appendChild(encryptedKeyInput);
-                registerForm.appendChild(saltInput);
-                registerForm.appendChild(nonceInput);
-
-                // Submit the registration form to Flask
-                registerForm.submit();
-
-            } catch (error) {
-
-                console.error("Registration error:", error);
-
-                alert("Unable to create your encryption key. Please try again.");
-
-                registerButton.disabled = false;
-                registerButton.textContent = "Create Account";
-
-            }
-
-        });
-
-    </script>
+    <script src="{{ url_for('static', filename='js/app.js') }}" defer></script>
 
 </body>
 </html>

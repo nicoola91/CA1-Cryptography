@@ -30,3 +30,6 @@ storage/
 .vscode/
 .DS_Store
 Thumbs.db
+
+# Encrypted uploaded files
+encrypted_files/

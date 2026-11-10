@@ -128,15 +128,27 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
+
 ### Run the application
 
-```bash
-python app.py
+Set the Flask secret key in Windows PowerShell:
+
+```powershell
+$env:FLASK_SECRET_KEY = (python -c "import secrets; print(secrets.token_hex(32))")
 ```
 
-Open the following address in your browser:
+Start the application:
 
-http://127.0.0.1:5000
+```powershell
+python -m flask --app app run --port 5002
+```
+
+Open the application in your browser:
+
+http://127.0.0.1:5002
+```
+
+
 
 ## 9. Testing
 
