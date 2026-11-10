@@ -13,6 +13,8 @@ app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024
 # Load the secret key from an environment variable.
 # Do not hard-code the secret key in the project.
 app.config["SECRET_KEY"] = os.environ.get("FLASK_SECRET_KEY")
+app.config["SESSION_COOKIE_HTTPONLY"] = True
+app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 
 if not app.config["SECRET_KEY"]:
     raise RuntimeError(
